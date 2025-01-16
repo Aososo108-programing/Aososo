@@ -77,13 +77,12 @@ function startMatching(matchingStatus) {
 
             // データ監視を登録（初期化完了後に呼び出し）
             if (gameRef) {
+                console.log("[DEBUG] gameRefが有効です:", gameRef.toString());
                 gameRef.on("value", (snapshot) => {
-                    console.log("[DEBUG] 変更イベントが発火しました");
                     const gameData = snapshot.val();
+                    console.log("[DEBUG] 取得したゲームデータ:", gameData);
 
                     if (gameData) {
-                        console.log("[DEBUG] 取得したゲームデータ:", gameData);
-
                         if (gameData.player1 === playerNickname && gameData.player2 === "waiting") {
                             matchingStatus.textContent = "対戦相手を待っています...";
                         } else if (gameData.player1 === playerNickname && gameData.player2 !== "waiting") {
@@ -97,6 +96,8 @@ function startMatching(matchingStatus) {
                         console.error("[DEBUG] データが空です。");
                     }
                 });
+            } else {
+                console.error("[DEBUG] gameRefが無効です。");
             }
         })
         .catch((error) => {
