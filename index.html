@@ -10,17 +10,17 @@
     <div id="game-container">
         <h1>オンラインゲーム</h1>
         <p>スコア: <span id="score">0</span></p>
-        <button id="start-btn">ゲーム開始</button>
         <input type="text" id="nickname" placeholder="ニックネームを入力">
+        <button id="start-btn">ゲーム開始</button>
         <p id="matching-status"></p>
         <button id="ready-btn" style="display: none;">準備完了</button>
     </div>
 
-    <!-- Firebase SDK (非モジュールバージョン) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
-    
-    <!-- 自分のゲームスクリプト -->
+
+    <!-- ゲームスクリプト -->
     <script src="game.js"></script>
 </body>
 </html>
