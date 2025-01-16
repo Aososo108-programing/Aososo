@@ -1,12 +1,12 @@
 // Firebaseの設定
 const firebaseConfig = {
-    apiKey: "your-api-key",
-    authDomain: "your-auth-domain",
-    databaseURL: "your-database-url",
-    projectId: "your-project-id",
-    storageBucket: "your-storage-bucket",
-    messagingSenderId: "your-messaging-sender-id",
-    appId: "your-app-id",
+    apiKey: "AIzaSyC6wfdNTjSEzxbaa25OsSNI0pttUL81A4U",
+    authDomain: "aososo-6cb52.firebaseapp.com",
+    databaseURL: "https://aososo-6cb52-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "aososo-6cb52",
+    storageBucket: "aososo-6cb52.firebasestorage.app",
+    messagingSenderId: "13878478089",
+    appId: "1:13878478089:web:92108377595e94ad64ffd8",
 };
 
 const app = firebase.initializeApp(firebaseConfig);
