@@ -16,7 +16,8 @@ const database = firebase.database();
 // ゲームの状態管理
 let playerNickname = "";
 let opponentNickname = "";
-let gameRef = null; // 初期化を明示的に設定
+let gameRef;
+let playerSlot;
 
 // ページの読み込みが完了したら実行
 document.addEventListener("DOMContentLoaded", () => {
@@ -25,6 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const nicknameInput = document.getElementById("nickname");
     const matchingStatus = document.getElementById("matching-status");
 
+    // ボタンが存在しない場合のエラーチェック
     if (!startButton || !readyButton || !nicknameInput || !matchingStatus) {
         console.error("必要な要素が見つかりません。HTMLを確認してください。");
         return;
@@ -39,16 +41,16 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        matchingStatus.textContent = "対戦相手を待っています...";
+        matchingStatus.textContent = "対戦相手を探しています...";
         startMatching(matchingStatus);
     });
 
     // 準備完了ボタンのクリックイベント
     readyButton.addEventListener("click", () => {
-        if (gameRef) {
-            gameRef.update({ gameStarted: true })
+        if (gameRef && playerSlot) {
+            gameRef.update({ [`${playerSlot}Ready`]: true })
                 .then(() => {
-                    matchingStatus.textContent = "ゲームを開始しました！";
+                    matchingStatus.textContent = "準備完了！対戦相手を待っています...";
                     readyButton.disabled = true;
                 })
                 .catch((error) => {
@@ -60,66 +62,82 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // マッチング処理
 function startMatching(matchingStatus) {
-    if (!playerNickname) return;
+    // 空いている部屋を検索
+    database.ref("games").once("value").then((snapshot) => {
+        const games = snapshot.val();
+        let roomFound = false;
 
-    // ゲームルームを作成または取得
-    gameRef = database.ref("games/" + playerNickname);
-
-    // 初期データを設定
-    gameRef
-        .set({
-            player1: playerNickname,
-            player2: "waiting",
-            gameStarted: false,
-        })
-        .then(() => {
-            console.log("[DEBUG] ゲームデータが作成されました");
-
-            // データ監視を登録（初期化完了後に呼び出し）
-            if (gameRef) {
-                console.log("[DEBUG] gameRefが有効です:", gameRef.toString());
-                gameRef.on("value", (snapshot) => {
-                    const gameData = snapshot.val();
-                    console.log("[DEBUG] 取得したゲームデータ:", gameData);
-
-                    if (gameData) {
-                        if (gameData.player1 === playerNickname && gameData.player2 === "waiting") {
-                            matchingStatus.textContent = "対戦相手を待っています...";
-                        } else if (gameData.player1 === playerNickname && gameData.player2 !== "waiting") {
-                            opponentNickname = gameData.player2;
-                            matchingStatus.textContent = `${opponentNickname}さんとマッチングしました！`;
-                            document.getElementById("ready-btn").style.display = "inline-block";
-                        } else {
-                            console.warn("[DEBUG] 想定外の状態:", gameData);
-                        }
-                    } else {
-                        console.error("[DEBUG] データが空です。");
-                    }
-                });
-            } else {
-                console.error("[DEBUG] gameRefが無効です。");
+        if (games) {
+            for (const roomId in games) {
+                const game = games[roomId];
+                if (game.player1 && !game.player2) {
+                    // 空いている部屋に参加
+                    joinRoom(roomId, "player2", matchingStatus);
+                    roomFound = true;
+                    break;
+                }
             }
-        })
-        .catch((error) => {
-            console.error("[DEBUG] データ送信エラー:", error);
-        });
+        }
 
-    // 他のプレイヤーのマッチングをシミュレーション
-    simulateOpponent("テストプレイヤー");
+        if (!roomFound) {
+            // 新しい部屋を作成
+            const newRoomId = `room_${Date.now()}`;
+            createRoom(newRoomId, matchingStatus);
+        }
+    });
 }
 
-// テスト用: 対戦相手をシミュレートしてデータを更新
-function simulateOpponent(opponentName) {
-    if (gameRef) {
-        console.log("[DEBUG] simulateOpponent を実行します...");
-        gameRef.update({
-            player2: opponentName,
-        }).then(() => {
-            console.log("[DEBUG] テスト用プレイヤーを追加しました:", opponentName);
-        }).catch((error) => {
-            console.error("[DEBUG] テスト用プレイヤー追加エラー:", error);
-        });
-    } else {
-        console.error("[DEBUG] gameRef が未定義のため simulateOpponent を実行できません。");
-    }
+// 新しい部屋を作成
+function createRoom(roomId, matchingStatus) {
+    gameRef = database.ref(`games/${roomId}`);
+    playerSlot = "player1";
+
+    gameRef.set({
+        player1: playerNickname,
+        player2: null,
+        player1Ready: false,
+        player2Ready: false,
+        gameStarted: false,
+    }).then(() => {
+        console.log("[DEBUG] 新しい部屋を作成しました:", roomId);
+        matchingStatus.textContent = "対戦相手を待っています...";
+        listenForChanges();
+    });
+}
+
+// 既存の部屋に参加
+function joinRoom(roomId, slot, matchingStatus) {
+    gameRef = database.ref(`games/${roomId}`);
+    playerSlot = slot;
+
+    gameRef.update({ [slot]: playerNickname }).then(() => {
+        console.log("[DEBUG] 部屋に参加しました:", roomId);
+        matchingStatus.textContent = "対戦相手とマッチングしました！";
+        listenForChanges();
+    });
+}
+
+// ゲームデータの変更を監視
+function listenForChanges() {
+    gameRef.on("value", (snapshot) => {
+        const gameData = snapshot.val();
+        console.log("[DEBUG] ゲームデータ更新:", gameData);
+
+        if (gameData) {
+            // 対戦相手の情報を取得
+            opponentNickname = playerSlot === "player1" ? gameData.player2 : gameData.player1;
+
+            if (opponentNickname) {
+                document.getElementById("ready-btn").style.display = "inline-block";
+                document.getElementById("matching-status").textContent = `${opponentNickname}さんとマッチングしました！`;
+            }
+
+            // 両者が準備完了したらゲームを開始
+            if (gameData.player1Ready && gameData.player2Ready) {
+                document.getElementById("matching-status").textContent = "ゲーム開始！";
+                console.log("[DEBUG] ゲームを開始します！");
+                gameRef.update({ gameStarted: true });
+            }
+        }
+    });
 }
