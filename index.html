@@ -3,59 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>オンラインゲーム</title>
+    <title>オンラインタイピングゲーム</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-container">
-        <h1>オンラインゲーム</h1>
-        <!-- スコア表示 -->
+        <h1>タイピングゲーム</h1>
+        <p id="instructions">5～8文字の単語をタイピングしてください！</p>
         <p>スコア: <span id="score">0</span></p>
-
+        <p id="opponent-score">相手のスコア: 0</p>
+        
         <!-- ニックネーム入力 -->
-        <input type="text" id="nickname" placeholder="ニックネームを入力">
-        <br><br>
-
-        <!-- ゲーム開始ボタン -->
-        <button id="start-btn">ゲーム開始</button>
-        <br><br>
-
-        <!-- マッチング状態表示 -->
-        <p id="matching-status">ここにマッチングの状態が表示されます</p>
-        <br><br>
-
-        <!-- 準備完了ボタン -->
-        <button id="ready-btn" style="display: none;">準備完了</button>
+        <div id="nickname-container">
+            <label for="nickname-input">ニックネームを入力:</label>
+            <input type="text" id="nickname-input" placeholder="例: player1">
+            <button id="start-matching-btn">マッチング開始</button>
         </div>
-    
-        <!-- Firebase SDK -->
-        <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
-    
-        <!-- ゲームスクリプト -->
-        <script src="game.js"></script>
+
+        <!-- 準備完了 -->
+        <div id="ready-container" style="display: none;">
+            <p id="matching-status">マッチング中...</p>
+            <button id="ready-btn">準備完了</button>
+        </div>
+
+        <!-- ゲームエリア -->
         <div id="game-area" style="display: none;">
-        <p id="typing-word"></p>
-        <input type="text" id="player-input" disabled placeholder="単語を入力...">
-        <p>スコア: <span id="score">0</span></p>
+            <p id="current-word">単語: ----</p>
+            <input type="text" id="typing-input" placeholder="ここにタイピング" autocomplete="off">
+            <button id="submit-btn">送信</button>
+            <p id="time-left">残り時間: 30秒</p>
         </div>
-    
-        <div id="game-area" style="display: none;">
-        <p id="typing-word"></p>
-        <input type="text" id="player-input" disabled placeholder="単語を入力...">
-        <p id="score-display">スコア: <span id="score">0</span></p>
-        <p id="timer">残り時間: 30秒</p>
+
+        <!-- 結果表示 -->
+        <div id="result-area" style="display: none;">
+            <h2 id="result-message"></h2>
+            <button id="play-again-btn">もう一度遊ぶ</button>
         </div>
-    <form>
-        <label for="username1">ユーザー名:</label>
-        <input type="text" id="username1" name="username">
-      
-        <label for="username2">もう一つのユーザー名:</label>
-        <input type="text" id="username2" name="username2">
-      
-        <button type="submit">送信</button>
-    </form>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
+
+    <!-- ゲームスクリプト -->
+    <script>
+        // Firebaseの設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyC6wfdNTjSEzxbaa25OsSNI0pttUL81A4U",
+            authDomain: "aososo-6cb52.firebaseapp.com",
+            databaseURL: "https://aososo-6cb52-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "aososo-6cb52",
+            storageBucket: "aososo-6cb52.firebasestorage.app",
+            messagingSenderId: "13878478089",
+            appId: "1:13878478089:web:92108377595e94ad64ffd8",
+        };
 
 
+        // Firebase初期化
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let playerNickname = "";
+        let opponentNickname = "";
+        let gameRef;
+        let gameStarted = false;
+        let score = 0;
+        let opponentScore = 0;
+        let currentWord = "";
+        let timeLeft = 30;
+        let timer;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const startMatchingBtn = document.getElementById("start-matching-btn");
+            const readyBtn = document.getElementById("ready-btn");
+            const submitBtn = document.getElementById("submit-btn");
+            const playAgainBtn = document.getElementById("play-again-btn");
+            const nicknameInput = document.getElementById("nickname-input");
+            const typingInput = document.getElementById("typing-input");
+            
+            // マッチング開始
+            startMatchingBtn.addEventListener("click", () => {
+                playerNickname = nicknameInput.value.trim();
+                if (!playerNickname) {
+                    alert("ニックネームを入力してください！");
+                    return;
+                }
+                gameRef = database.ref("games/" + playerNickname);
+                gameRef.set({
+                    player1: playerNickname,
+                    player2: "waiting",
+                    gameStarted: false,
+                    player1Score: 0,
+                    player2Score: 0
+                });
+                document.getElementById("nickname-container").style.display = "none";
+                document.getElementById("ready-container").style.display = "block";
+                monitorGame();
+            });
+
+            // 準備完了
+            readyBtn.addEventListener("click", () => {
+                if (gameRef) {
+                    gameRef.update({ gameStarted: true });
+                }
+            });
+
+            // タイピング送信
+            submitBtn.addEventListener("click", () => {
+                const typedWord = typingInput.value.trim();
+                if (typedWord === currentWord) {
+                    score++;
+                    gameRef.update({ player1Score: score });
+                }
+                typingInput.value = "";
+                generateWord();
+            });
+
+            // もう一度遊ぶ
+            playAgainBtn.addEventListener("click", () => {
+                location.reload();
+            });
+        });
+
+        function monitorGame() {
+            gameRef.on("value", (snapshot) => {
+                const gameData = snapshot.val();
+                if (!gameData) return;
+
+                // 相手とのマッチング
+                if (gameData.player2 === "waiting" && playerNickname !== gameData.player1) {
+                    gameRef.update({ player2: playerNickname });
+                    opponentNickname = gameData.player1;
+                } else if (gameData.player2 !== "waiting" && playerNickname === gameData.player1) {
+                    opponentNickname = gameData.player2;
+                }
+
+                // ゲーム開始
+                if (gameData.gameStarted && !gameStarted) {
+                    gameStarted = true;
+                    startGame();
+                }
+
+                // スコアの更新
+                opponentScore = playerNickname === gameData.player1 ? gameData.player2Score : gameData.player1Score;
+                document.getElementById("opponent-score").textContent = `相手のスコア: ${opponentScore}`;
+            });
+        }
+
+        function startGame() {
+            document.getElementById("ready-container").style.display = "none";
+            document.getElementById("game-area").style.display = "block";
+            generateWord();
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById("time-left").textContent = `残り時間: ${timeLeft}秒`;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function generateWord() {
+            const words = ["トマト", "にんじん", "パソコン", "スマホ", "カメラ", "テレビ", "りんご", "バナナ"];
+            currentWord = words[Math.floor(Math.random() * words.length)];
+            document.getElementById("current-word").textContent = `単語: ${currentWord}`;
+        }
+
+        function endGame() {
+            document.getElementById("game-area").style.display = "none";
+            document.getElementById("result-area").style.display = "block";
+
+            if (score > opponentScore) {
+                document.getElementById("result-message").textContent = `あなたは勝ちました！ (${score} - ${opponentScore})`;
+            } else if (score < opponentScore) {
+                document.getElementById("result-message").textContent = `あなたは負けました！ (${score} - ${opponentScore})`;
+            } else {
+                document.getElementById("result-message").textContent = `引き分けです！ (${score} - ${opponentScore})`;
+            }
+        }
+    </script>
 </body>
 </html>
