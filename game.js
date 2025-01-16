@@ -165,3 +165,9 @@ function startGame() {
         }
     }, 1000);
 }
+const nicknameInput = document.getElementById("nickname");
+
+if (!nicknameInput) {
+    console.error("ニックネーム入力フィールドが見つかりません。HTMLを確認してください。");
+    return;
+}
