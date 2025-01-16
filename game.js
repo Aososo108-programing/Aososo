@@ -12,30 +12,33 @@ function startMatching() {
     gameRef.transaction((currentData) => {
         if (!currentData) {
             // データが存在しない場合、新規作成（player1として登録）
+            console.log("[DEBUG] 新規ゲームデータを作成します...");
             return {
                 player1: playerNickname,
                 player2: "waiting"
             };
         } else if (currentData.player2 === "waiting") {
             // player2が空いている場合、player2に設定
+            console.log("[DEBUG] player2 に設定されます:", playerNickname);
             currentData.player2 = playerNickname;
             return currentData;
         } else {
-            // 両方埋まっている場合、変更しない
-            return; // 何も更新しない
+            // 両方埋まっている場合、何もしない
+            console.log("[DEBUG] ゲームは既に満員です。");
+            return;
         }
     }, (error, committed, snapshot) => {
         if (error) {
             console.error("[ERROR] データ送信エラー:", error);
         } else if (committed) {
-            console.log("[DEBUG] マッチング情報が送信されました:", snapshot.val());
+            console.log("[DEBUG] トランザクションがコミットされました。最新データ:", snapshot.val());
             monitorGame(snapshot.val());
         } else {
-            console.log("[DEBUG] マッチングに失敗しました。すでに満員の可能性があります。");
+            console.log("[DEBUG] トランザクションはコミットされませんでした。");
         }
     });
 
-    // リアルタイムでゲームデータを監視
+    // ゲームデータの変更を監視
     gameRef.on('value', (snapshot) => {
         const gameData = snapshot.val();
         console.log("[DEBUG] 取得したゲームデータ:", gameData);
