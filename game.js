@@ -14,10 +14,6 @@ const app = firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
 // ゲームの状態管理
-let gameStarted = false;
-let remainingTime = 30;
-let yourScore = 0;
-let opponentScore = 0;
 let playerNickname;
 let gameRef;
 let opponentNickname = "";
@@ -34,7 +30,7 @@ function startMatching() {
     // ゲームのリファレンス作成
     gameRef = database.ref('games/' + playerNickname);
     gameRef.set({
-        player1: "waiting",
+        player1: playerNickname,
         player2: "waiting"
     }).then(() => {
         console.log("[DEBUG] マッチング情報が送信されました");
@@ -58,24 +54,20 @@ function startMatching() {
 function handleGameData(gameData) {
     console.log("[DEBUG] 現在のゲームデータ:", gameData);
 
-    if (gameData.player1 === "waiting") {
-        gameRef.update({ player1: playerNickname });
-        console.log("[DEBUG] player1 に設定されました:", playerNickname);
-    } else if (gameData.player2 === "waiting" && gameData.player1 !== playerNickname) {
-        gameRef.update({ player2: playerNickname });
-        console.log("[DEBUG] player2 に設定されました:", playerNickname);
-    } else if (gameData.player1 && gameData.player2 && gameData.player1 !== gameData.player2) {
+    // プレイヤーの状態を確認し、対戦相手を設定
+    if (gameData.player1 === playerNickname && gameData.player2 === "waiting") {
+        console.log("[DEBUG] 対戦相手を待っています...");
+        document.getElementById("matching-status").textContent = "対戦相手を待っています...";
+    } else if (gameData.player2 !== "waiting" && gameData.player1 !== gameData.player2) {
         matchFound(gameData);
     }
 }
 
 function matchFound(gameData) {
-    // 対戦相手の名前を正しく取得
     opponentNickname = gameData.player1 === playerNickname 
         ? gameData.player2 
         : gameData.player1;
 
-    // 対戦相手が"waiting"の場合のチェック
     if (!opponentNickname || opponentNickname === "waiting") {
         console.log("[DEBUG] 対戦相手を待っています...");
         document.getElementById("matching-status").textContent = `対戦相手を待っています...`;
@@ -83,8 +75,6 @@ function matchFound(gameData) {
     }
 
     console.log("[DEBUG] マッチング成功！対戦相手:", opponentNickname);
-
-    // 正しい対戦相手名を表示
     document.getElementById("matching-status").textContent = `${opponentNickname}さんとマッチングしました！`;
     document.getElementById("ready-btn").style.display = "block";
 }
