@@ -13,33 +13,38 @@ const firebaseConfig = {
 const app = firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// ゲームのロジック
-let playerNickname = "";
-let gameRef = null;
+// ゲームの状態管理
+let gameStarted = false;
+let remainingTime = 30;
+let yourScore = 0;
+let opponentScore = 0;
+let playerNickname;
+let gameRef;
+let playerRef;
+let opponentNickname = "";
 
-document.getElementById("start-btn").addEventListener("click", () => {
-    startMatching();
-});
-
+// マッチング開始
 function startMatching() {
-    playerNickname = document.getElementById("nickname").value;
+    playerNickname = document.getElementById('nickname').value;
 
     if (!playerNickname) {
         alert("ニックネームを入力してください！");
         return;
     }
 
-    gameRef = database.ref("games/" + playerNickname);
+    // ゲームのリファレンス作成
+    gameRef = firebase.database().ref('games/' + playerNickname);
     gameRef.set({
         player1: "waiting",
-        player2: "waiting",
+        player2: "waiting"
     }).then(() => {
         console.log("マッチング情報が送信されました");
     }).catch((error) => {
         console.error("データ送信エラー:", error);
     });
 
-    gameRef.on("value", (snapshot) => {
+    // リアルタイムでゲームデータを監視
+    gameRef.on('value', (snapshot) => {
         const gameData = snapshot.val();
         if (gameData) {
             handleGameData(gameData);
@@ -48,6 +53,7 @@ function startMatching() {
 }
 
 function handleGameData(gameData) {
+    // 自分の役割を設定（player1 または player2）
     if (gameData.player1 === "waiting") {
         gameRef.update({ player1: playerNickname });
     } else if (gameData.player2 === "waiting" && gameData.player1 !== playerNickname) {
@@ -58,7 +64,19 @@ function handleGameData(gameData) {
 }
 
 function matchFound(gameData) {
-    const opponentNickname = gameData.player1 === playerNickname ? gameData.player2 : gameData.player1;
-    document.getElementById("matching-status").textContent = `${opponentNickname}さんとマッチングしました！`;
-    document.getElementById("ready-btn").style.display = "block";
+    // 対戦相手の名前を正しく取得
+    const opponentNickname = gameData.player1 === playerNickname 
+        ? gameData.player2 
+        : gameData.player1;
+
+    // "waiting"が残っている場合の例外処理
+    if (opponentNickname === "waiting") {
+        document.getElementById("matching-status").textContent = `対戦相手を待っています...`;
+    } else {
+        document.getElementById("matching-status").textContent = `${opponentNickname}さんとマッチングしました！`;
+        document.getElementById("ready-btn").style.display = "block";
+    }
 }
+
+// ゲーム開始ボタンのイベントリスナー
+document.getElementById('start-btn').addEventListener('click', startMatching);
