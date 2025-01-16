@@ -26,19 +26,27 @@
 
         <!-- 準備完了ボタン -->
         <button id="ready-btn" style="display: none;">準備完了</button>
-    </div>
+        </div>
+    
+        <!-- Firebase SDK -->
+        <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
+    
+        <!-- ゲームスクリプト -->
+        <script src="game.js"></script>
+        <div id="game-area" style="display: none;">
+        <p id="typing-word"></p>
+        <input type="text" id="player-input" disabled placeholder="単語を入力...">
+        <p>スコア: <span id="score">0</span></p>
+        </div>
+    
+        <div id="game-area" style="display: none;">
+        <p id="typing-word"></p>
+        <input type="text" id="player-input" disabled placeholder="単語を入力...">
+        <p id="score-display">スコア: <span id="score">0</span></p>
+        <p id="timer">残り時間: 30秒</p>
+        </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
-
-    <!-- ゲームスクリプト -->
-    <script src="game.js"></script>
-    <div id="game-area" style="display: none;">
-    <p id="typing-word"></p>
-    <input type="text" id="player-input" disabled placeholder="単語を入力...">
-    <p>スコア: <span id="score">0</span></p>
-    </div>
 
 </body>
 </html>
