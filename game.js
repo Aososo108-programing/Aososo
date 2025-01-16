@@ -16,7 +16,7 @@ const database = firebase.database();
 // ゲームの状態管理
 let playerNickname = "";
 let opponentNickname = "";
-let gameRef;
+let gameRef = null; // 初期化を明示的に設定
 
 // ページの読み込みが完了したら実行
 document.addEventListener("DOMContentLoaded", () => {
@@ -65,40 +65,46 @@ function startMatching(matchingStatus) {
     // ゲームルームを作成または取得
     gameRef = database.ref("games/" + playerNickname);
 
-    gameRef.set({
-        player1: playerNickname,
-        player2: "waiting",
-        gameStarted: false,
-    }).then(() => {
-        console.log("[DEBUG] ゲームデータが作成されました");
+    // 初期データを設定
+    gameRef
+        .set({
+            player1: playerNickname,
+            player2: "waiting",
+            gameStarted: false,
+        })
+        .then(() => {
+            console.log("[DEBUG] ゲームデータが作成されました");
 
-        // データ監視を登録
-        gameRef.on("value", (snapshot) => {
-            console.log("[DEBUG] 変更イベントが発火しました");
-            const gameData = snapshot.val();
+            // データ監視を登録（初期化完了後に呼び出し）
+            if (gameRef) {
+                gameRef.on("value", (snapshot) => {
+                    console.log("[DEBUG] 変更イベントが発火しました");
+                    const gameData = snapshot.val();
 
-            if (gameData) {
-                console.log("[DEBUG] 取得したゲームデータ:", gameData);
+                    if (gameData) {
+                        console.log("[DEBUG] 取得したゲームデータ:", gameData);
 
-                if (gameData.player1 === playerNickname && gameData.player2 === "waiting") {
-                    matchingStatus.textContent = "対戦相手を待っています...";
-                } else if (gameData.player1 === playerNickname && gameData.player2 !== "waiting") {
-                    opponentNickname = gameData.player2;
-                    matchingStatus.textContent = `${opponentNickname}さんとマッチングしました！`;
-                    document.getElementById("ready-btn").style.display = "inline-block";
-                } else {
-                    console.warn("[DEBUG] 想定外の状態:", gameData);
-                }
-            } else {
-                console.error("[DEBUG] データが空です。");
+                        if (gameData.player1 === playerNickname && gameData.player2 === "waiting") {
+                            matchingStatus.textContent = "対戦相手を待っています...";
+                        } else if (gameData.player1 === playerNickname && gameData.player2 !== "waiting") {
+                            opponentNickname = gameData.player2;
+                            matchingStatus.textContent = `${opponentNickname}さんとマッチングしました！`;
+                            document.getElementById("ready-btn").style.display = "inline-block";
+                        } else {
+                            console.warn("[DEBUG] 想定外の状態:", gameData);
+                        }
+                    } else {
+                        console.error("[DEBUG] データが空です。");
+                    }
+                });
             }
+        })
+        .catch((error) => {
+            console.error("[DEBUG] データ送信エラー:", error);
         });
 
-        // 他のプレイヤーのマッチングをシミュレーション
-        simulateOpponent("テストプレイヤー");
-    }).catch((error) => {
-        console.error("[DEBUG] データ送信エラー:", error);
-    });
+    // 他のプレイヤーのマッチングをシミュレーション
+    simulateOpponent("テストプレイヤー");
 }
 
 // テスト用: 対戦相手をシミュレートしてデータを更新
