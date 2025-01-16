@@ -20,7 +20,6 @@ let yourScore = 0;
 let opponentScore = 0;
 let playerNickname;
 let gameRef;
-let playerRef;
 let opponentNickname = "";
 
 // マッチング開始
@@ -33,7 +32,7 @@ function startMatching() {
     }
 
     // ゲームのリファレンス作成
-    gameRef = firebase.database().ref('games/' + playerNickname);
+    gameRef = database.ref('games/' + playerNickname);
     gameRef.set({
         player1: "waiting",
         player2: "waiting"
@@ -65,17 +64,19 @@ function handleGameData(gameData) {
 
 function matchFound(gameData) {
     // 対戦相手の名前を正しく取得
-    const opponentNickname = gameData.player1 === playerNickname 
+    opponentNickname = gameData.player1 === playerNickname 
         ? gameData.player2 
         : gameData.player1;
 
-    // "waiting"が残っている場合の例外処理
+    // 対戦相手が"waiting"の場合、処理を中断
     if (opponentNickname === "waiting") {
         document.getElementById("matching-status").textContent = `対戦相手を待っています...`;
-    } else {
-        document.getElementById("matching-status").textContent = `${opponentNickname}さんとマッチングしました！`;
-        document.getElementById("ready-btn").style.display = "block";
+        return;
     }
+
+    // 正しい対戦相手名を表示
+    document.getElementById("matching-status").textContent = `${opponentNickname}さんとマッチングしました！`;
+    document.getElementById("ready-btn").style.display = "block";
 }
 
 // ゲーム開始ボタンのイベントリスナー
