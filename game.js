@@ -17,14 +17,19 @@ const database = firebase.database();
 let playerNickname = "";
 let opponentNickname = "";
 let gameRef;
-let matchingStatus; // グローバルスコープで定義
 
 // ページの読み込みが完了したら実行
 document.addEventListener("DOMContentLoaded", () => {
     const startButton = document.getElementById("start-btn");
     const readyButton = document.getElementById("ready-btn");
     const nicknameInput = document.getElementById("nickname");
-    matchingStatus = document.getElementById("matching-status"); // スコープ修正
+    const matchingStatus = document.getElementById("matching-status"); // スコープをDOM読み込み内に確保
+
+    // ボタンが存在しない場合のエラーチェック
+    if (!startButton || !readyButton || !nicknameInput || !matchingStatus) {
+        console.error("必要な要素が見つかりません。HTMLを確認してください。");
+        return;
+    }
 
     // ゲーム開始ボタンのクリックイベント
     startButton.addEventListener("click", () => {
@@ -36,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         matchingStatus.textContent = "対戦相手を待っています...";
-        startMatching();
+        startMatching(matchingStatus);
     });
 
     // 準備完了ボタンのクリックイベント
@@ -55,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // マッチング処理
-function startMatching() {
+function startMatching(matchingStatus) {
     if (!playerNickname) return;
 
     // ゲームルームを作成または取得
