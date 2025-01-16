@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const nicknameInput = document.getElementById("nickname");
     const matchingStatus = document.getElementById("matching-status");
 
-    // 必要な要素が見つからない場合のエラーチェック
+    // ボタンが存在しない場合のエラーチェック
     if (!startButton || !readyButton || !nicknameInput || !matchingStatus) {
         console.error("必要な要素が見つかりません。HTMLを確認してください。");
         return;
@@ -88,7 +88,24 @@ function startMatching(matchingStatus) {
                 opponentNickname = gameData.player2;
                 matchingStatus.textContent = `${opponentNickname}さんとマッチングしました！`;
                 document.getElementById("ready-btn").style.display = "inline-block";
+            } else {
+                console.warn("[DEBUG] 想定外の状態:", gameData);
             }
+        } else {
+            console.error("[DEBUG] データが空です。");
         }
     });
+}
+
+// テスト用: 対戦相手をシミュレートしてデータを更新
+function simulateOpponent(opponentName) {
+    if (gameRef) {
+        gameRef.update({
+            player2: opponentName,
+        }).then(() => {
+            console.log("[DEBUG] テスト用プレイヤーを追加しました:", opponentName);
+        }).catch((error) => {
+            console.error("[DEBUG] テスト用プレイヤー追加エラー:", error);
+        });
+    }
 }
