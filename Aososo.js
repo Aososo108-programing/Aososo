@@ -16,11 +16,14 @@ const database = firebase.database();
 // ゲームの状態管理
 let score = 0;
 
-// ゲーム開始ボタンのクリックイベント
-document.getElementById('start-btn').addEventListener('click', () => {
-    score = 0;
-    updateScore();
-    startGame();
+// DOMが読み込まれた後にゲームを初期化
+document.addEventListener('DOMContentLoaded', () => {
+    // ゲーム開始ボタンのクリックイベント
+    document.getElementById('start-btn').addEventListener('click', () => {
+        score = 0;
+        updateScore();
+        startGame();
+    });
 });
 
 // スコアの更新
