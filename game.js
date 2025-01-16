@@ -14,7 +14,6 @@ const app = firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
 // ゲームの状態管理
-let gameStarted = false;
 let playerNickname = "";
 let opponentNickname = "";
 let gameRef;
@@ -25,12 +24,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const readyButton = document.getElementById("ready-btn");
     const nicknameInput = document.getElementById("nickname");
     const matchingStatus = document.getElementById("matching-status");
-
-    // ボタンが存在しない場合のエラーチェック
-    if (!startButton || !readyButton || !nicknameInput || !matchingStatus) {
-        console.error("必要な要素が見つかりません。HTMLを確認してください。");
-        return;
-    }
 
     // ゲーム開始ボタンのクリックイベント
     startButton.addEventListener("click", () => {
@@ -47,16 +40,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 準備完了ボタンのクリックイベント
     readyButton.addEventListener("click", () => {
-        if (!gameStarted) {
-            matchingStatus.textContent = "ゲームを開始します...";
-            readyButton.disabled = true;
-
-            gameRef.update({ gameStarted: true });
+        if (gameRef) {
+            gameRef.update({ gameStarted: true })
+                .then(() => {
+                    matchingStatus.textContent = "ゲームを開始しました！";
+                    readyButton.disabled = true;
+                })
+                .catch((error) => {
+                    console.error("準備完了の更新エラー:", error);
+                });
         }
     });
 });
 
-// マッチング開始
+// マッチング処理
 function startMatching() {
     if (!playerNickname) return;
 
@@ -68,24 +65,23 @@ function startMatching() {
         player2: "waiting",
         gameStarted: false,
     }).then(() => {
-        console.log("[DEBUG] マッチング情報が送信されました");
+        console.log("[DEBUG] ゲームデータが作成されました");
     }).catch((error) => {
         console.error("[DEBUG] データ送信エラー:", error);
     });
 
-    // データベースの変更を監視
+    // ゲームデータの変更を監視
     gameRef.on("value", (snapshot) => {
         const gameData = snapshot.val();
         console.log("[DEBUG] 取得したゲームデータ:", gameData);
 
         if (gameData) {
             if (gameData.player1 === playerNickname && gameData.player2 === "waiting") {
-                console.log("[DEBUG] 対戦相手を待っています...");
-            } else if (gameData.player1 && gameData.player2 !== "waiting") {
+                matchingStatus.textContent = "対戦相手を待っています...";
+            } else if (gameData.player1 === playerNickname && gameData.player2 !== "waiting") {
                 opponentNickname = gameData.player2;
-                document.getElementById("matching-status").textContent =
-                    `${opponentNickname}さんとマッチングしました！`;
-                document.getElementById("ready-btn").style.display = "block";
+                matchingStatus.textContent = `${opponentNickname}さんとマッチングしました！`;
+                readyButton.style.display = "inline-block";
             }
         }
     });
