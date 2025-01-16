@@ -95,11 +95,15 @@ function startMatching(matchingStatus) {
             console.error("[DEBUG] データが空です。");
         }
     });
+
+    // 他のプレイヤーのマッチングをシミュレーション
+    simulateOpponent("テストプレイヤー");
 }
 
 // テスト用: 対戦相手をシミュレートしてデータを更新
 function simulateOpponent(opponentName) {
     if (gameRef) {
+        console.log("[DEBUG] simulateOpponent を実行します...");
         gameRef.update({
             player2: opponentName,
         }).then(() => {
