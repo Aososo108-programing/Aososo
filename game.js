@@ -37,26 +37,33 @@ function startMatching() {
         player1: "waiting",
         player2: "waiting"
     }).then(() => {
-        console.log("マッチング情報が送信されました");
+        console.log("[DEBUG] マッチング情報が送信されました");
     }).catch((error) => {
-        console.error("データ送信エラー:", error);
+        console.error("[ERROR] データ送信エラー:", error);
     });
 
     // リアルタイムでゲームデータを監視
     gameRef.on('value', (snapshot) => {
         const gameData = snapshot.val();
+        console.log("[DEBUG] 取得したゲームデータ:", gameData);
+
         if (gameData) {
             handleGameData(gameData);
+        } else {
+            console.log("[DEBUG] ゲームデータがありません");
         }
     });
 }
 
 function handleGameData(gameData) {
-    // 自分の役割を設定（player1 または player2）
+    console.log("[DEBUG] 現在のゲームデータ:", gameData);
+
     if (gameData.player1 === "waiting") {
         gameRef.update({ player1: playerNickname });
+        console.log("[DEBUG] player1 に設定されました:", playerNickname);
     } else if (gameData.player2 === "waiting" && gameData.player1 !== playerNickname) {
         gameRef.update({ player2: playerNickname });
+        console.log("[DEBUG] player2 に設定されました:", playerNickname);
     } else if (gameData.player1 && gameData.player2 && gameData.player1 !== gameData.player2) {
         matchFound(gameData);
     }
@@ -68,11 +75,14 @@ function matchFound(gameData) {
         ? gameData.player2 
         : gameData.player1;
 
-    // 対戦相手が"waiting"の場合、処理を中断
-    if (opponentNickname === "waiting") {
+    // 対戦相手が"waiting"の場合のチェック
+    if (!opponentNickname || opponentNickname === "waiting") {
+        console.log("[DEBUG] 対戦相手を待っています...");
         document.getElementById("matching-status").textContent = `対戦相手を待っています...`;
         return;
     }
+
+    console.log("[DEBUG] マッチング成功！対戦相手:", opponentNickname);
 
     // 正しい対戦相手名を表示
     document.getElementById("matching-status").textContent = `${opponentNickname}さんとマッチングしました！`;
