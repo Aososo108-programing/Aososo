@@ -9,13 +9,26 @@
 <body>
     <div id="game-container">
         <h1>タイピングゲーム</h1>
-        <p id="timer">残り時間: 30</p>
-        <button id="match-btn">マッチング開始</button>
-        <p id="status"></p>
-        <p id="sentence"></p>
-        <input type="text" id="typing-input" disabled>
-        <p>あなたのスコア: <span id="your-score">0</span></p>
-        <p>相手のスコア: <span id="opponent-score">0</span></p>
+        
+        <div id="nickname-container">
+            <label for="nickname">ニックネーム: </label>
+            <input type="text" id="nickname" placeholder="ニックネームを入力">
+            <button id="start-btn">マッチング開始</button>
+        </div>
+        
+        <div id="match-status" style="display: none;">
+            <p id="matching-status"></p>
+            <button id="ready-btn" style="display: none;">準備完了</button>
+        </div>
+        
+        <div id="game-status" style="display: none;">
+            <p id="timer">残り時間: 30</p>
+            <p id="sentence"></p>
+            <input type="text" id="typing-input" disabled>
+            <p>あなたのスコア: <span id="your-score">0</span></p>
+            <p>相手のスコア: <span id="opponent-score">0</span></p>
+            <p id="status"></p>
+        </div>
     </div>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
