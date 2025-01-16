@@ -1,7 +1,3 @@
-// FirebaseのSDKをインポート
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js';
-import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js';
-
 // Firebaseの設定
 const firebaseConfig = {
     apiKey: "AIzaSyC6wfdNTjSEzxbaa25OsSNI0pttUL81A4U",
@@ -14,8 +10,8 @@ const firebaseConfig = {
 };
 
 // Firebaseを初期化
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
+const app = firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
 
 // ゲームの状態管理
 let gameStarted = false;
@@ -29,7 +25,6 @@ let opponentNickname = "";
 
 // マッチング開始
 function startMatching() {
-    // ニックネームを取得
     playerNickname = document.getElementById('nickname').value;
 
     if (!playerNickname) {
@@ -37,9 +32,8 @@ function startMatching() {
         return;
     }
 
-    // Firebaseにマッチング情報を送信
-    gameRef = ref(database, 'games/' + playerNickname);
-    set(gameRef, {
+    gameRef = firebase.database().ref('games/' + playerNickname);
+    gameRef.set({
         player1: "waiting",
         player2: "waiting"
     }).then(() => {
@@ -48,13 +42,12 @@ function startMatching() {
         console.error("データ送信エラー:", error);
     });
 
-    // マッチングの監視
-    onValue(gameRef, (snapshot) => {
+    firebase.database().ref('games/' + playerNickname).on('value', (snapshot) => {
         const gameData = snapshot.val();
         if (gameData && gameData.player1 === "waiting") {
-            set(gameRef, { player1: playerNickname });
+            gameRef.set({ player1: playerNickname });
         } else if (gameData && gameData.player2 === "waiting" && gameData.player1 !== playerNickname) {
-            set(gameRef, { player2: playerNickname });
+            gameRef.set({ player2: playerNickname });
         } else if (gameData && gameData.player1 && gameData.player2 && gameData.player1 !== gameData.player2) {
             matchFound(gameData);
         }
@@ -63,7 +56,6 @@ function startMatching() {
 
 function matchFound(gameData) {
     opponentNickname = gameData.player1 === playerNickname ? gameData.player2 : gameData.player1;
-    
     document.getElementById('matching-status').textContent = `${opponentNickname}さんとマッチングしました！`;
     document.getElementById('ready-btn').style.display = 'block';
 }
