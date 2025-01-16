@@ -25,11 +25,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const nicknameInput = document.getElementById("nickname");
     const matchingStatus = document.getElementById("matching-status");
 
+    // 要素のエラーチェック
     if (!startButton || !readyButton || !nicknameInput || !matchingStatus) {
         console.error("必要な要素が見つかりません。HTMLを確認してください。");
         return;
     }
 
+    // ゲーム開始ボタンのクリックイベント
     startButton.addEventListener("click", () => {
         playerNickname = nicknameInput.value.trim();
 
@@ -42,6 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
         startMatching(matchingStatus);
     });
 
+    // 準備完了ボタンのクリックイベント
     readyButton.addEventListener("click", () => {
         if (gameRef) {
             gameRef.update({ gameStarted: true })
@@ -56,9 +59,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
+// マッチング処理
 function startMatching(matchingStatus) {
     if (!playerNickname) return;
 
+    // ゲームルームを作成または取得
     gameRef = database.ref("games/" + playerNickname);
 
     gameRef.set({
@@ -71,6 +76,7 @@ function startMatching(matchingStatus) {
         console.error("[DEBUG] データ送信エラー:", error);
     });
 
+    // ゲームデータの変更を監視
     gameRef.on("value", (snapshot) => {
         console.log("[DEBUG] 変更イベントが発火しました");
         const gameData = snapshot.val();
@@ -91,9 +97,11 @@ function startMatching(matchingStatus) {
         }
     });
 
+    // 他のプレイヤーのマッチングをシミュレーション
     simulateOpponent("テストプレイヤー");
 }
 
+// テスト用: 対戦相手をシミュレーションしてデータを更新
 function simulateOpponent(opponentName) {
     if (gameRef) {
         console.log("[DEBUG] simulateOpponent を実行します...");
