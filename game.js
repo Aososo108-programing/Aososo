@@ -13,39 +13,33 @@ const firebaseConfig = {
 const app = firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// ゲームの状態管理
-let gameStarted = false;
+// ゲームのロジック
 let playerNickname = "";
 let gameRef = null;
-let opponentNickname = "";
 
-// マッチング開始ボタンの動作
-document.getElementById('start-btn').addEventListener('click', () => {
+document.getElementById("start-btn").addEventListener("click", () => {
     startMatching();
 });
 
-// マッチング処理
 function startMatching() {
-    playerNickname = document.getElementById('nickname').value;
+    playerNickname = document.getElementById("nickname").value;
 
     if (!playerNickname) {
         alert("ニックネームを入力してください！");
         return;
     }
 
-    // Firebaseのゲーム参照を設定
-    gameRef = database.ref('games/' + playerNickname);
+    gameRef = database.ref("games/" + playerNickname);
     gameRef.set({
         player1: "waiting",
-        player2: "waiting"
+        player2: "waiting",
     }).then(() => {
         console.log("マッチング情報が送信されました");
     }).catch((error) => {
         console.error("データ送信エラー:", error);
     });
 
-    // マッチングステータスを監視
-    gameRef.on('value', (snapshot) => {
+    gameRef.on("value", (snapshot) => {
         const gameData = snapshot.val();
         if (gameData) {
             handleGameData(gameData);
@@ -53,7 +47,6 @@ function startMatching() {
     });
 }
 
-// マッチングデータを処理
 function handleGameData(gameData) {
     if (gameData.player1 === "waiting") {
         gameRef.update({ player1: playerNickname });
@@ -64,9 +57,8 @@ function handleGameData(gameData) {
     }
 }
 
-// マッチングが成立した場合
 function matchFound(gameData) {
-    opponentNickname = gameData.player1 === playerNickname ? gameData.player2 : gameData.player1;
-    document.getElementById('matching-status').textContent = `${opponentNickname}さんとマッチングしました！`;
-    document.getElementById('ready-btn').style.display = 'block';
+    const opponentNickname = gameData.player1 === playerNickname ? gameData.player2 : gameData.player1;
+    document.getElementById("matching-status").textContent = `${opponentNickname}さんとマッチングしました！`;
+    document.getElementById("ready-btn").style.display = "block";
 }
