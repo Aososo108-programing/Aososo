@@ -17,13 +17,14 @@ const database = firebase.database();
 let playerNickname = "";
 let opponentNickname = "";
 let gameRef;
+let matchingStatus; // グローバルスコープで定義
 
 // ページの読み込みが完了したら実行
 document.addEventListener("DOMContentLoaded", () => {
     const startButton = document.getElementById("start-btn");
     const readyButton = document.getElementById("ready-btn");
     const nicknameInput = document.getElementById("nickname");
-    const matchingStatus = document.getElementById("matching-status");
+    matchingStatus = document.getElementById("matching-status"); // スコープ修正
 
     // ゲーム開始ボタンのクリックイベント
     startButton.addEventListener("click", () => {
@@ -81,7 +82,7 @@ function startMatching() {
             } else if (gameData.player1 === playerNickname && gameData.player2 !== "waiting") {
                 opponentNickname = gameData.player2;
                 matchingStatus.textContent = `${opponentNickname}さんとマッチングしました！`;
-                readyButton.style.display = "inline-block";
+                document.getElementById("ready-btn").style.display = "inline-block";
             }
         }
     });
