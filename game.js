@@ -29,13 +29,32 @@ function startMatching() {
 
     // ゲームのリファレンス作成
     gameRef = database.ref('games/' + playerNickname);
-    gameRef.set({
-        player1: playerNickname,
-        player2: "waiting"
-    }).then(() => {
-        console.log("[DEBUG] マッチング情報が送信されました");
-    }).catch((error) => {
-        console.error("[ERROR] データ送信エラー:", error);
+
+    // player1として登録するか、player2として登録するか確認
+    gameRef.transaction((currentData) => {
+        if (!currentData) {
+            // データが存在しない場合、新規作成（player1として登録）
+            return {
+                player1: playerNickname,
+                player2: "waiting"
+            };
+        } else if (currentData.player1 && currentData.player2 === "waiting") {
+            // player2が空いている場合、player2に設定
+            currentData.player2 = playerNickname;
+            return currentData;
+        } else {
+            // 両方埋まっている場合、変更しない
+            return; // 何も更新しない
+        }
+    }, (error, committed, snapshot) => {
+        if (error) {
+            console.error("[ERROR] データ送信エラー:", error);
+        } else if (committed) {
+            console.log("[DEBUG] マッチング情報が送信されました");
+            monitorGame(snapshot.val());
+        } else {
+            console.log("[DEBUG] マッチングに失敗しました。すでに満員の可能性があります。");
+        }
     });
 
     // リアルタイムでゲームデータを監視
