@@ -113,3 +113,37 @@ function simulateOpponent(opponentName) {
         });
     }
 }
+gameRef.on("value", (snapshot) => {
+    console.log("[DEBUG] 変更イベントが発火しました"); // イベントが発火しているか確認
+    const gameData = snapshot.val();
+    console.log("[DEBUG] 取得したゲームデータ:", gameData);
+
+    if (gameData) {
+        if (gameData.player1 === playerNickname && gameData.player2 === "waiting") {
+            matchingStatus.textContent = "対戦相手を待っています...";
+        } else if (gameData.player1 === playerNickname && gameData.player2 !== "waiting") {
+            opponentNickname = gameData.player2;
+            matchingStatus.textContent = `${opponentNickname}さんとマッチングしました！`;
+            document.getElementById("ready-btn").style.display = "inline-block";
+        } else {
+            console.warn("[DEBUG] 想定外の状態:", gameData);
+        }
+    } else {
+        console.error("[DEBUG] データが空です。");
+    }
+});
+function simulateOpponent(opponentName) {
+    if (gameRef) {
+        console.log("[DEBUG] simulateOpponent を実行します...");
+        gameRef.update({
+            player2: opponentName,
+        }).then(() => {
+            console.log("[DEBUG] テスト用プレイヤーを追加しました:", opponentName);
+        }).catch((error) => {
+            console.error("[DEBUG] テスト用プレイヤー追加エラー:", error);
+        });
+    }
+}
+
+// ゲーム開始直後に対戦相手をシミュレート
+simulateOpponent("テストプレイヤー");
