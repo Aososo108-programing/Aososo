@@ -18,18 +18,21 @@ let playerNickname = "";
 let opponentNickname = "";
 let gameRef;
 
+// ゲームデータ
+let isReady = false;
+let isOpponentReady = false;
+let wordToType = "";
+let playerScore = 0;
+
 // ページの読み込みが完了したら実行
 document.addEventListener("DOMContentLoaded", () => {
     const startButton = document.getElementById("start-btn");
     const readyButton = document.getElementById("ready-btn");
     const nicknameInput = document.getElementById("nickname");
     const matchingStatus = document.getElementById("matching-status");
-
-    // ボタンが存在しない場合のエラーチェック
-    if (!startButton || !readyButton || !nicknameInput || !matchingStatus) {
-        console.error("必要な要素が見つかりません。HTMLを確認してください。");
-        return;
-    }
+    const typingWord = document.getElementById("typing-word");
+    const playerInput = document.getElementById("player-input");
+    const scoreDisplay = document.getElementById("score");
 
     // ゲーム開始ボタンのクリックイベント
     startButton.addEventListener("click", () => {
@@ -41,103 +44,59 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         matchingStatus.textContent = "対戦相手を探しています...";
-        startMatching(matchingStatus);
+        startMatching(matchingStatus, typingWord, scoreDisplay, playerInput);
     });
 
     // 準備完了ボタンのクリックイベント
     readyButton.addEventListener("click", () => {
         if (gameRef) {
-            gameRef.update({ gameStarted: true })
-                .then(() => {
-                    matchingStatus.textContent = "ゲームを開始しました！";
-                    readyButton.disabled = true;
-                })
-                .catch((error) => {
-                    console.error("準備完了の更新エラー:", error);
-                });
+            isReady = true;
+            gameRef.update({ [`${playerNickname}_ready`]: true });
+            readyButton.disabled = true;
+        }
+    });
+
+    // プレイヤーの入力イベント
+    playerInput.addEventListener("input", () => {
+        if (playerInput.value.trim() === wordToType) {
+            handlePlayerWin();
         }
     });
 });
 
-// マッチング処理
-function startMatching(matchingStatus) {
-    if (!playerNickname) return;
+// マッチング処理（省略部分は先のコードを参照）
 
-    // 待機中のゲームルームを探す
-    const gamesRef = database.ref("games");
-    gamesRef.once("value", (snapshot) => {
-        const games = snapshot.val();
-        let foundRoom = false;
-
-        // 既存の部屋を探索して空き部屋があれば参加
-        for (const roomId in games) {
-            const gameData = games[roomId];
-            if (gameData.player2 === "waiting") {
-                joinRoom(roomId, gameData, matchingStatus);
-                foundRoom = true;
-                break;
-            }
-        }
-
-        // 空き部屋がなければ新しい部屋を作成
-        if (!foundRoom) {
-            createRoom(matchingStatus);
-        }
-    });
+// ゲーム開始ロジック
+function startGame(typingWord, scoreDisplay, playerInput) {
+    wordToType = generateRandomWord();
+    typingWord.textContent = `次の単語を入力してください: ${wordToType}`;
+    playerInput.disabled = false;
+    playerInput.value = "";
+    playerInput.focus();
 }
 
-// 新しい部屋を作成
-function createRoom(matchingStatus) {
-    const roomId = database.ref("games").push().key;
-    gameRef = database.ref("games/" + roomId);
-
-    gameRef.set({
-        player1: playerNickname,
-        player2: "waiting",
-        gameStarted: false,
-    }).then(() => {
-        console.log("[DEBUG] 新しいゲームルームを作成しました");
-        listenForChanges(matchingStatus);
-    }).catch((error) => {
-        console.error("[DEBUG] 新しい部屋の作成エラー:", error);
-    });
+// ランダムな単語を生成
+function generateRandomWord() {
+    const words = ["apple", "banana", "cherry", "grape", "orange", "melon"];
+    return words[Math.floor(Math.random() * words.length)];
 }
 
-// 既存の部屋に参加
-function joinRoom(roomId, gameData, matchingStatus) {
-    gameRef = database.ref("games/" + roomId);
+// プレイヤーが勝利した際の処理
+function handlePlayerWin() {
+    playerScore++;
+    gameRef.update({ winner: playerNickname, gameStarted: false });
+    alert(`${playerNickname}の勝利！`);
+    resetGame();
+}
 
+// ゲームリセット
+function resetGame() {
+    wordToType = "";
+    document.getElementById("player-input").disabled = true;
     gameRef.update({
-        player2: playerNickname,
-    }).then(() => {
-        console.log("[DEBUG] 既存の部屋に参加しました");
-        opponentNickname = gameData.player1;
-        matchingStatus.textContent = `${opponentNickname}さんとマッチングしました！`;
-        document.getElementById("ready-btn").style.display = "inline-block";
-        listenForChanges(matchingStatus);
-    }).catch((error) => {
-        console.error("[DEBUG] 部屋への参加エラー:", error);
+        gameStarted: false,
+        [`${playerNickname}_ready`]: false,
+        [`${opponentNickname}_ready`]: false,
     });
-}
-
-// ゲームデータの変更を監視
-function listenForChanges(matchingStatus) {
-    gameRef.on("value", (snapshot) => {
-        const gameData = snapshot.val();
-        console.log("[DEBUG] 変更イベントが発火しました");
-        console.log("[DEBUG] 取得したゲームデータ:", gameData);
-
-        if (gameData) {
-            if (gameData.player1 === playerNickname) {
-                opponentNickname = gameData.player2 !== "waiting" ? gameData.player2 : null;
-            } else if (gameData.player2 === playerNickname) {
-                opponentNickname = gameData.player1;
-            }
-
-            if (opponentNickname) {
-                matchingStatus.textContent = `${opponentNickname}さんとマッチングしました！`;
-                document.getElementById("ready-btn").style.display = "inline-block";
-            }
-        }
-    });
+    document.getElementById("ready-btn").disabled = false;
 }
