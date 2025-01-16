@@ -34,13 +34,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         matchingStatus.textContent = "マッチング中...";
-        startMatching();
+        startMatching(matchingStatus);
     });
 
     readyButton.addEventListener("click", () => {
         if (!gameRef) return;
 
-        // 自分がplayer1かplayer2かによって更新フィールドを切り替え
         const readyField = playerNickname === opponentNickname ? "player1Ready" : "player2Ready";
 
         gameRef.update({ [readyField]: true })
@@ -53,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // マッチング処理
-function startMatching() {
+function startMatching(matchingStatus) {
     gameRef = database.ref("games/" + playerNickname);
 
     gameRef.once("value").then((snapshot) => {
