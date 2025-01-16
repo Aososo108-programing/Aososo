@@ -3,18 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>オンラインゲーム</title>
-    <link rel="stylesheet" href="Aososo.css">
+    <title>タイピングゲーム</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div id="game-container">
-        <h1>オンラインゲーム</h1>
-        <p>スコア: <span id="score">0</span></p>
-        <button id="start-btn">ゲーム開始</button>
+        <h1>タイピングゲーム</h1>
+        <p id="timer">残り時間: 30</p>
+        <button id="match-btn">マッチング開始</button>
+        <p id="status"></p>
+        <p id="sentence"></p>
+        <input type="text" id="typing-input" disabled>
+        <p>あなたのスコア: <span id="your-score">0</span></p>
+        <p>相手のスコア: <span id="opponent-score">0</span></p>
     </div>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js"></script>
-    <script src="Aososo.js"></script>
+    <script src="game.js"></script>
 </body>
 </html>
