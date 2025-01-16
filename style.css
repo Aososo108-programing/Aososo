@@ -31,3 +31,21 @@ input {
     width: 80%;
     margin-top: 20px;
 }
+
+#nickname-container {
+    margin-top: 20px;
+}
+
+#game-status {
+    margin-top: 50px;
+}
+
+#match-status {
+    margin-top: 20px;
+    font-size: 18px;
+}
+
+#ready-btn {
+    margin-top: 20px;
+    background-color: #ff9800;
+}
