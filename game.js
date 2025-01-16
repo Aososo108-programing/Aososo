@@ -1,6 +1,6 @@
 // Firebaseの設定
 const firebaseConfig = {
-    apiKey: "AIzaSy...YourAPIKeyHere...",
+    apiKey: "AIzaSyC6w...",
     authDomain: "aososo-6cb52.firebaseapp.com",
     databaseURL: "https://aososo-6cb52-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "aososo-6cb52",
@@ -9,54 +9,79 @@ const firebaseConfig = {
     appId: "1:13878478089:web:92108377595e94ad64ffd8",
 };
 
-// Firebase初期化
+// Firebaseを初期化
 const app = firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// グローバル変数
+// ゲームの状態管理
 let playerNickname = "";
 let opponentNickname = "";
-let gameRef = null;
-let gameWords = ["キャベツ", "トマト", "ナス", "カメラ", "ノート", "ペン"];
-let currentWord = "";
-let timerInterval;
+let gameRef;
 
-// DOM要素取得
-const nicknameInput = document.getElementById("nickname-input");
-const startButton = document.getElementById("start-btn");
-const readyButton = document.getElementById("ready-btn");
-const matchingStatus = document.getElementById("matching-status");
-const gameArea = document.getElementById("game-area");
-const currentWordDisplay = document.getElementById("current-word");
-const typingInput = document.getElementById("typing-input");
-const timeLeftDisplay = document.getElementById("time-left");
-const resultArea = document.getElementById("result-area");
-const resultMessage = document.getElementById("result-message");
+// ページの読み込みが完了したら実行
+document.addEventListener("DOMContentLoaded", () => {
+    const startButton = document.getElementById("start-btn");
+    const readyButton = document.getElementById("ready-btn");
+    const nicknameInput = document.getElementById("nickname");
+    const matchingStatus = document.getElementById("matching-status");
 
-// イベントリスナー
-startButton.addEventListener("click", startMatching);
-readyButton.addEventListener("click", markReady);
+    startButton.addEventListener("click", () => {
+        playerNickname = nicknameInput.value.trim();
 
-// ゲームのマッチング処理
+        if (!playerNickname) {
+            alert("ニックネームを入力してください！");
+            return;
+        }
+
+        matchingStatus.textContent = "マッチング中...";
+        startMatching();
+    });
+
+    readyButton.addEventListener("click", () => {
+        if (!gameRef) return;
+
+        // 自分がplayer1かplayer2かによって更新フィールドを切り替え
+        const readyField = playerNickname === opponentNickname ? "player1Ready" : "player2Ready";
+
+        gameRef.update({ [readyField]: true })
+            .then(() => {
+                matchingStatus.textContent = "準備完了！ゲーム開始を待っています...";
+                readyButton.disabled = true;
+            })
+            .catch((error) => console.error("準備完了の更新エラー:", error));
+    });
+});
+
+// マッチング処理
 function startMatching() {
-    playerNickname = nicknameInput.value.trim();
-
-    if (!playerNickname) {
-        alert("ニックネームを入力してください！");
-        return;
-    }
-
-    matchingStatus.textContent = "マッチング中...";
     gameRef = database.ref("games/" + playerNickname);
 
-    gameRef.set({
-        player1: playerNickname,
-        player2: "waiting",
-        player1Ready: false,
-        player2Ready: false,
-        gameStarted: false,
-    }).then(() => {
-        matchingStatus.textContent = "対戦相手を待っています...";
+    gameRef.once("value").then((snapshot) => {
+        const gameData = snapshot.val();
+
+        if (gameData) {
+            if (gameData.player2 === "waiting") {
+                // プレイヤー2として参加
+                gameRef.update({ player2: playerNickname }).then(() => {
+                    opponentNickname = gameData.player1;
+                    matchingStatus.textContent = `${opponentNickname}さんとマッチングしました！`;
+                    document.getElementById("ready-btn").style.display = "inline-block";
+                });
+            } else {
+                alert("この部屋は満員です。別のニックネームで試してください。");
+            }
+        } else {
+            // 新しいゲームを作成
+            gameRef.set({
+                player1: playerNickname,
+                player2: "waiting",
+                player1Ready: false,
+                player2Ready: false,
+                gameStarted: false,
+            }).then(() => {
+                matchingStatus.textContent = "対戦相手を待っています...";
+            });
+        }
     });
 
     gameRef.on("value", (snapshot) => {
@@ -67,7 +92,7 @@ function startMatching() {
         if (gameData.player2 !== "waiting" && !opponentNickname) {
             opponentNickname = gameData.player2;
             matchingStatus.textContent = `${opponentNickname}さんとマッチングしました！`;
-            readyButton.style.display = "inline-block";
+            document.getElementById("ready-btn").style.display = "inline-block";
         }
 
         if (gameData.player1Ready && gameData.player2Ready && !gameData.gameStarted) {
@@ -80,62 +105,61 @@ function startMatching() {
     });
 }
 
-// 準備完了ボタン処理
-function markReady() {
-    if (!gameRef) return;
-
-    const readyField = playerNickname === opponentNickname ? "player1Ready" : "player2Ready";
-    gameRef.update({ [readyField]: true }).then(() => {
-        matchingStatus.textContent = "準備完了！ゲーム開始を待っています...";
-        readyButton.disabled = true;
-    });
-}
-
 // ゲーム開始処理
 function startGame() {
-    gameArea.style.display = "block";
-    matchingStatus.style.display = "none";
-    readyButton.style.display = "none";
+    document.getElementById("game-container").innerHTML = `
+        <h1>ゲーム開始！</h1>
+        <p>単語を入力してEnterを押してください。</p>
+        <div id="game-status"></div>
+        <input type="text" id="game-input" placeholder="単語を入力">
+    `;
 
-    startTimer(30);
-    showNextWord();
-}
+    const words = ["りんご", "みかん", "トマト", "ピーマン", "スプーン", "フォーク", "ナイフ"];
+    const gameInput = document.getElementById("game-input");
+    const gameStatus = document.getElementById("game-status");
 
-// 単語表示と入力監視
-function showNextWord() {
-    currentWord = gameWords[Math.floor(Math.random() * gameWords.length)];
-    currentWordDisplay.textContent = currentWord;
-    typingInput.value = "";
+    let score = 0;
+    const startTime = Date.now();
+    const gameDuration = 30000; // 30秒
 
-    typingInput.addEventListener("input", checkInput);
-}
+    gameInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            const enteredWord = gameInput.value.trim();
+            if (words.includes(enteredWord)) {
+                score++;
+                gameStatus.textContent = `スコア: ${score}`;
+            }
+            gameInput.value = "";
+        }
+    });
 
-// 入力チェック
-function checkInput() {
-    if (typingInput.value.trim() === currentWord) {
-        showNextWord();
-    }
-}
+    const gameTimer = setInterval(() => {
+        const elapsedTime = Date.now() - startTime;
 
-// タイマー処理
-function startTimer(seconds) {
-    let timeLeft = seconds;
-    timeLeftDisplay.textContent = timeLeft;
+        if (elapsedTime >= gameDuration) {
+            clearInterval(gameTimer);
 
-    timerInterval = setInterval(() => {
-        timeLeft--;
-        timeLeftDisplay.textContent = timeLeft;
+            gameRef.update({ [`scores/${playerNickname}`]: score }).then(() => {
+                gameRef.once("value").then((snapshot) => {
+                    const gameData = snapshot.val();
+                    const player1Score = gameData.scores[gameData.player1] || 0;
+                    const player2Score = gameData.scores[gameData.player2] || 0;
 
-        if (timeLeft <= 0) {
-            clearInterval(timerInterval);
-            endGame();
+                    let resultMessage = "ゲーム終了！\n";
+                    resultMessage += `${gameData.player1}: ${player1Score}点\n`;
+                    resultMessage += `${gameData.player2}: ${player2Score}点\n`;
+
+                    if (player1Score > player2Score) {
+                        resultMessage += gameData.player1 === playerNickname ? "あなたの勝ち！" : "あなたの負け...";
+                    } else if (player2Score > player1Score) {
+                        resultMessage += gameData.player2 === playerNickname ? "あなたの勝ち！" : "あなたの負け...";
+                    } else {
+                        resultMessage += "引き分け！";
+                    }
+
+                    alert(resultMessage);
+                });
+            });
         }
     }, 1000);
-}
-
-// ゲーム終了処理
-function endGame() {
-    gameArea.style.display = "none";
-    resultArea.style.display = "block";
-    resultMessage.textContent = "ゲーム終了！";
 }
