@@ -88,16 +88,19 @@ function startMatching(matchingStatus) {
 
         if (!gameData) return;
 
+        // player2 が設定されたらマッチング完了
         if (gameData.player2 !== "waiting" && !opponentNickname) {
             opponentNickname = gameData.player2;
             matchingStatus.textContent = `${opponentNickname}さんとマッチングしました！`;
             document.getElementById("ready-btn").style.display = "inline-block";
         }
 
+        // 両プレイヤーが準備完了の場合、ゲームを開始
         if (gameData.player1Ready && gameData.player2Ready && !gameData.gameStarted) {
             gameRef.update({ gameStarted: true });
         }
 
+        // ゲーム開始
         if (gameData.gameStarted) {
             startGame();
         }
