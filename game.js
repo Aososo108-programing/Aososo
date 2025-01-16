@@ -23,9 +23,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const startButton = document.getElementById("start-btn");
     const readyButton = document.getElementById("ready-btn");
     const nicknameInput = document.getElementById("nickname");
-    const matchingStatus = document.getElementById("matching-status"); // スコープをDOM読み込み内に確保
+    const matchingStatus = document.getElementById("matching-status");
 
-    // ボタンが存在しない場合のエラーチェック
+    // 必要な要素が見つからない場合のエラーチェック
     if (!startButton || !readyButton || !nicknameInput || !matchingStatus) {
         console.error("必要な要素が見つかりません。HTMLを確認してください。");
         return;
